@@ -48,7 +48,7 @@ import SavingsTwoToneIcon from '@mui/icons-material/SavingsTwoTone';
 
 
 const menuConfig = [
-  { name: "Iglesias", href: "/admin/empresas", icono: <ApartmentTwoToneIcon /> },
+  { name: "Sedes", href: "/admin/sedes", icono: <ApartmentTwoToneIcon /> },
   { name: "Perfiles", href: "/admin/perfil", icono: <TuneIcon /> },
   { name: "Usuarios", href: "/admin/usuarios", icono: <PeopleAltIcon /> }, 
 

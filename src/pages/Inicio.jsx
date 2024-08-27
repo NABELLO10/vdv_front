@@ -1,11 +1,7 @@
 import useAuth from "../hooks/useAuth";
-import logo from '../../public/logoVDV.png'
-import logoMio from '../../public/logoV.png'
-import TurnosGuardias from '../pages/procesos/TurnosGuardias'
-import GraficoFinanzas from "./procesos/inicioComponentes/GraficoFinanzas";
-import GraficoPagos from "./procesos/inicioComponentes/GraficoPagos";
-import GraficoPersonal from "./procesos/inicioComponentes/GraficoPersonal";
-import GraficosVehiculos from "./procesos/inicioComponentes/GraficosVehiculos";
+import logo from '/logoVDV.png'
+import logoMio from '/logoV.png'
+
 
 
 const Inicio = () => {

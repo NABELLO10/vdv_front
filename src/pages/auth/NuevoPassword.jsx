@@ -54,7 +54,7 @@ const NuevoPassword = () => {
       <Particulas /> {/* Agrega el componente de partículas aquí */}
       <ToastContainer />
       {tokenValido && (
-        <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center lg:h-screen">
           <div className="md:flex flex-col md:flex-row w-full h-full mt-24 md:mt-0 bg-transparent rounded-lg shadow-lg overflow-hidden">
             <div className="md:w-1/2 md:p-8 p-4 md:px-12 mx-auto flex items-center justify-center">
               <div className="md:w-8/12 w-full">
