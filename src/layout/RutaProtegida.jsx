@@ -28,7 +28,7 @@ const RutaProtegida = () => {
     <>
       <NavBar />
 
-      <main className=" mx-5 h-screen mt-20 mb-2">
+      <main className=" mx-5 h-screen mt-20 mb-10">
         <ToastContainer />
         <Outlet />
       </main>

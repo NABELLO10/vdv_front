@@ -5,14 +5,21 @@ import useAuth from "../../hooks/useAuth";
 import useAdicionales from "../../hooks/useAdicionales";
 
 import TextField from "@mui/material/TextField";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-
+import Button from "@mui/material/Button";
+import Pagination from "@mui/material/Pagination";
+import EditTwoToneIcon from '@mui/icons-material/EditTwoTone';
+import DeleteTwoToneIcon from '@mui/icons-material/DeleteTwoTone';
 
 const Sedes = () => {
-  const { auth } = useAuth();  
-  const { clientes, ciudades } = useAdicionales();  
+  const { auth } = useAuth();
+  const { clientes, ciudades } = useAdicionales();
 
   const [id_cliente, setCliente] = useState(auth.id_cliente);
   const [nom_sede, setNomSede] = useState("");
@@ -22,17 +29,35 @@ const Sedes = () => {
   const [busqueda, setBusqueda] = useState("");
   const [eliminar, setEliminar] = useState("");
 
-
   const [sedes, setSedes] = useState([]);
-
-  //PARA EDICION de una sede
   const [edit, setEdit] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState("asc");
+   
+  const itemsPerPage = 5;
 
   useEffect(() => {
     obtenerSedes();
   }, [id_cliente]);
 
 
+  const sortData = (column) => {
+    const newDirection = sortColumn === column && sortDirection === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortDirection(newDirection);
+  
+    const sortedData = [...sedes].sort((a, b) => {
+      if (newDirection === "asc") {
+        return a[column] > b[column] ? 1 : -1;
+      } else {
+        return a[column] < b[column] ? 1 : -1;
+      }
+    });
+  
+    setSedes(sortedData);
+  };
 
   const obtenerSedes = async () => {
     try {
@@ -45,17 +70,12 @@ const Sedes = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const { data } = await clienteAxios(
-        `/crud/sedes/${id_cliente}`,
-        config
-      );
-
+      const { data } = await clienteAxios(`/crud/sedes/${id_cliente}`, config);
       setSedes(data);
     } catch (error) {
       console.log(error);
     }
   };
-
 
   const limpiarFormulario = () => {
     setNomSede("");
@@ -72,8 +92,6 @@ const Sedes = () => {
     setCiudad(sede.id_ciudad);
     setDireccion(sede.direccion);
     setEstado(sede.est_activo);
-    setID(sede.id);
-
   };
 
   const eliminarSede = async (id) => {
@@ -89,23 +107,16 @@ const Sedes = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      const { data } = await clienteAxios.delete(
-        `/crud/sedes/${id}`,
-        config
-      );
+      const { data } = await clienteAxios.delete(`/crud/sedes/${id}`, config);
       msgOk(data.msg);
       obtenerSedes();
-      handleClose()
-
+      handleClose();
     } catch (error) {
       if (error.response) {
-        // Si hay un error de respuesta de la API, muestra el mensaje de error.
         msgError(error.response.data.msg);
       } else if (error.request) {
-        // La solicitud fue hecha pero no se recibió respuesta
         msgError("No hay respuesta del servidor");
       } else {
-        // Algo falló al hacer la solicitud
         msgError("Error al realizar la solicitud");
       }
       console.log(error);
@@ -118,7 +129,7 @@ const Sedes = () => {
       return;
     }
 
-   try {
+    try {
       const token = localStorage.getItem("token_vdv");
 
       if (!token) {
@@ -135,40 +146,37 @@ const Sedes = () => {
 
       if (edit.id) {
         const { data } = await clienteAxios.put(
-          `/crud/sedes/${id}`,
+          `/crud/sedes/${edit.id}`,
           {
             nom_sede,
             id_ciudad,
             direccion,
             est_activo: est_activo,
-            id_cliente
+            id_cliente,
           },
           config
         );
-
         msgOk(data.msg);
       } else {
         const { data } = await clienteAxios.post(
           "/crud/sedes",
           {
-            nom_sede,                   
+            nom_sede,
             id_ciudad,
             direccion,
             est_activo: est_activo,
-            id_cliente
+            id_cliente,
           },
           config
         );
-
         msgOk(data.msg);
       }
 
       limpiarFormulario();
-     } catch (error) {
+    } catch (error) {
       msgError(error.response.data.msg);
-    } 
+    }
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -184,249 +192,249 @@ const Sedes = () => {
     setOpen(false);
   };
 
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
+
+  // Filtrar las sedes según la búsqueda
+  const filteredSedes = sedes.filter((val) => {
+    if (!busqueda) return val;
+    return val.nom_sede.toLowerCase().includes(busqueda.toLowerCase());
+  });
+
+  // Calcular la paginación después del filtro
+  const totalPages = Math.ceil(filteredSedes.length / itemsPerPage);
+  const paginasSedes = filteredSedes.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Resetear la página actual si se cambia la búsqueda y no hay suficientes elementos
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [filteredSedes, totalPages, currentPage]);
+
   return (
     <>
-      <h2 className="font-black text-gray-800 text-2xl mx-4 ">
-        Sedes       
-      </h2>
+      <div className="mx-auto">
+        <h6 className="font-black text-gray-800 text-xl mb-2">Sedes</h6>
 
-      <div className="mt-2 mx-4 lg:mx-0 lg:flex justify-start">
-        <div className="shadow-lg h-full  lg:w-4/12 px-8 py-5 rounded-xl bg-white">
-          <form className="" onSubmit={handleSubmit}>
+        <div className="bg-white shadow rounded-lg p-3 mb-3">
+          <form onSubmit={handleSubmit}>
             {auth.id == 1 && (
-              <div className="">
-                <label
-                  htmlFor="sede"
-                  className="peer-placeholder-shown:uppercase absolute left-0 -top-3.5 text-gray-900 text-sm
-                                peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 transition-all peer-placeholder-shown:top-3"
-                ></label>
-
-                <select
-                  name="sede"
+              <FormControl fullWidth margin="dense" size="small">
+                <InputLabel id="cliente-label">Cliente</InputLabel>
+                <Select
+                  labelId="cliente-label"
+                  id="cliente"
                   value={id_cliente}
-                  className={`mt-2 w-full p-2 bg-gray-50 border uppercase border-gray-300 rounded-lg text-center text font-bold text-gray-500 `}
                   onChange={(e) => setCliente(e.target.value)}
+                  label="Cliente"
                 >
                   {clientes.map((r) => (
-                    <option key={r.id} value={r.id}>
+                    <MenuItem key={r.id} value={r.id}>
                       {r.nombre}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormControl>
             )}
-
-            <div className="space-y-4 mt-4">
-
-              <div className="">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <FormControl fullWidth margin="dense" size="small">
                 <TextField
                   id="nom_sede"
-                  className="peer pt-3 pb-2 block w-full"
+                  label="Nombre de la Sede"
                   value={nom_sede}
                   onChange={(e) => setNomSede(e.target.value)}
-                  label="Nombre"
                   variant="outlined"
+                  fullWidth
+                  size="small"
                 />
-              </div>
+              </FormControl>
 
-              <div className="">
-                <select
-                  name="ciudad"
+              <FormControl fullWidth margin="dense" size="small">
+                <InputLabel id="ciudad-label">Ciudad</InputLabel>
+                <Select
+                  labelId="ciudad-label"
+                  id="ciudad"
                   value={id_ciudad}
-                  className="w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-center text font-bold text-gray-500"
                   onChange={(e) => setCiudad(e.target.value)}
+                  label="Ciudad"
                 >
-                  <option value={""} disabled hidden>
+                  <MenuItem value="" disabled>
                     Ciudad...
-                  </option>
+                  </MenuItem>
                   {ciudades.map((ciudad) => (
-                    <option key={ciudad.id} value={ciudad.id}>
+                    <MenuItem key={ciudad.id} value={ciudad.id}>
                       {ciudad.nom_comuna}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
-              </div> 
+                </Select>
+              </FormControl>
 
-              <div className=" ">
+              <FormControl fullWidth margin="dense" size="small">
                 <TextField
                   id="direccion"
-                  className="peer pt-3 pb-2 block w-full"
+                  label="Dirección"
                   value={direccion}
                   onChange={(e) => setDireccion(e.target.value)}
-                  label="Dirección"
                   variant="outlined"
+                  fullWidth
+                  size="small"
                 />
-              </div>
+              </FormControl>
 
-              <div className="">
-                <select
-                  name="perfil"
+              <FormControl fullWidth margin="dense" size="small">
+                <InputLabel id="estado-label">Estado</InputLabel>
+                <Select
+                  labelId="estado-label"
+                  id="estado"
                   value={est_activo}
-                  className=" w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-center text font-bold text-gray-500"
                   onChange={(e) => setEstado(e.target.value)}
+                  label="Estado"
                 >
-                  <option value={1}>Activo</option>
-                  <option value={0}>Inactivo</option>
-                </select>
-              </div>
+                  <MenuItem value={1}>Activo</MenuItem>
+                  <MenuItem value={0}>Inactivo</MenuItem>
+                </Select>
+              </FormControl>
             </div>
 
-            <div className="lg:flex gap-5 lg:my-2">
-              <div className="lg:flex  gap-2  mx-auto">
-                <input
-                  type="submit"
-                  value={edit.id ? "Actualizar" : "Registrar"}
-                  className="bg-cyan-950  hover:bg-cyan-600 duration-100 w-full py-2 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10"
-                ></input>
+            <div className="mt-1 lg:flex  justify-end gap-2">
+              <input
+                type="submit"
+                value={edit.id ? "Actualizar" : "Registrar"}
+                className="bg-cyan-950  hover:bg-cyan-600 duration-100 w-full lg:w-auto py-1 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10"
+              ></input>
 
-                <button
-                  type="button"
-                  onClick={limpiarFormulario}
-                  className={`bg-gray-600  hover:bg-gray-700 duration-100 w-full  py-2 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10 `}
-                >
-                  Cancelar
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={limpiarFormulario}
+                className={
+                  "bg-gray-600  hover:bg-gray-700 duration-100 lgflex w-full  lg:w-auto py-1 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10"
+                }
+              >
+                Cancelar
+              </button>
             </div>
           </form>
         </div>
 
-        <div className="overflow-auto lg:w-8/12 rounded-lg  lg:mt-0 mt-6 lg:px-5">
-          <div className="lg:w-4/12">
-            <input
-              name="busqueda"
-              id="busqueda"
-              type="text"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className=" border border-blue-800 shadow rounded-md p-1  w-full text-blue-500 placeholder-blue-300 mb-2"
-              placeholder=" Buscar..."
-            />
-          </div>
-          <table className=" border-collapse border-2 lg:w-full shadow-lg border-gray-300 rounded-lg bg-white text-left text-xs text-gray-500">
-            <thead className="font-bold text-white bg-cyan-950">
-              <tr>
-               {/*  <th scope="col" className="px-6 py-2 font-bold text-white bg-blue-950">
-                  Rut
-                </th> */}
-                <th scope="col" className="px-6 py-2 ">
-                  Sede
-                </th>
-
-                <th scope="col" className="px-6 py-2 ">
-                  Ciudad
-                </th>
-                <th scope="col" className="px-6 py-2">
-                  Dirección
-                </th>
-                <th scope="col" className="px-6 py-2 ">
-                  Estado
-                </th>
-
-                <th
-                  scope="col"
-                  className="px-6 py-4 font-medium text-white "
-                ></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100  border-gray-100">
-              {sedes
-                .filter((val) => {
-                  if (busqueda == "") {
-                    return val;
-                  } else if (
-                    val.nom_sede
-                      .toLowerCase()
-                      .includes(busqueda.toLowerCase())
-                  ) {
-                    return val;
-                  }
-                })
-                .map((sede) => (
-                  <tr
-                    className="whitespace-nowrap hover:bg-gray-200"
-                    key={sede.id}
+        <div className="bg-white shadow rounded-lg p-2">
+          <TextField
+            id="busqueda"
+            label="Buscar Sede"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            fullWidth
+            variant="outlined"
+            size="small"
+            margin="dense"
+          />
+          <div className="overflow-x-auto rounded-xl ">
+            <table className="min-w-full table-auto border-collapse  border text-center border-gray-300">
+              <thead>
+                <tr className="bg-cyan-950 text-center text-white">
+                  <th
+                    className="px-4 font-semibold cursor-pointer hover:text-cyan-600"
+                    onClick={() => sortData("nom_sede")}
                   >
-                
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {sede.nom_sede}
-                    </td>
+                    Sede{" "}
+                    {sortColumn === "nom_sede" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                  <th
+                    className="px-4 font-semibold cursor-pointer  hover:text-cyan-600"
+                    onClick={() => sortData("mae_comuna.nom_comuna")}
+                  >
+                    Ciudad{" "}
+                    {sortColumn === "mae_comuna.nom_comuna" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                  <th
+                    className="px-4 font-semibold cursor-pointer  hover:text-cyan-600"
+                    onClick={() => sortData("direccion")}
+                  >
+                    Dirección{" "}
+                    {sortColumn === "direccion" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                  <th
+                    className="px-4 font-semibold cursor-pointer  hover:text-cyan-600"
+                    onClick={() => sortData("est_activo")}
+                  >
+                    Estado{" "}
+                    {sortColumn === "est_activo" &&
+                      (sortDirection === "asc" ? "▲" : "▼")}
+                  </th>
+                  <th className="px-4"></th>
+                </tr>
+              </thead>
 
-                     <td className="px-6 py-4 text-sm text-gray-500">
+              <tbody className="divide-y divide-gray-200">
+                {paginasSedes.map((sede) => (
+                  <tr key={sede.id} className="hover:bg-gray-200">
+                    <td className="px-4 py-2 text-sm">{sede.nom_sede}</td>
+                    <td className="px-4 py-2 text-sm">
                       {sede.mae_comuna.nom_comuna}
-                    </td> 
-
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {sede.direccion}
                     </td>
+                    <td className="px-4 py-2 text-sm">{sede.direccion}</td>
 
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-4 py-2 text-sm">
                       {sede.est_activo ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-green-600">
-                          <span className="h-1.5 w-1.5 rounded-full bg-green-600"></span>
                           Activo
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-600">
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-600"></span>
                           Inactivo
                         </span>
                       )}
                     </td>
-                    <td>
+
+                    <td className="px-4 py-1 flex gap-2 justify-end mr-20">
                       <button
                         type="button"
                         onClick={() => setEdicion(sede)}
-                        className="py-1 mx-2"
+                        className="py-1  text-blue-600 hover:text-blue-900"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-6 h-6 text-blue-400 hover:text-blue-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
+                        <EditTwoToneIcon />
                       </button>
 
                       <button
-                        className="py-1 "
+                        className="py-1 text-red-500 hover:text-red-800 "
                         onClick={() => {
                           setEliminar(sede.id);
                           handleClickOpen();
                         }}
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-6 h-6 text-red-500 hover:text-red-800"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
+                        <DeleteTwoToneIcon />
                       </button>
                     </td>
                   </tr>
                 ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+
+            {/* Mostrar paginación solo si hay más de una página */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-4">
+                <Pagination
+                  count={totalPages}
+                  page={currentPage}
+                  onChange={handlePageChange}
+                  variant="outlined"
+                  shape="rounded"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <Dialog
-        fullWidth={true}
+        fullWidth
         maxWidth={"sm"}
         open={open}
         onClose={handleClose}
@@ -434,25 +442,18 @@ const Sedes = () => {
         aria-describedby="alert-dialog-description"
       >
         <DialogContent>
-          <div className="p-0.5 rounded-lg">
-            <div className="">
-              <div className="modal-body relative p-4">
-                <p>¿Realmente desea eliminar esta Empresa?</p>
-              </div>
-            </div>
-          </div>
+          <p>¿Realmente desea eliminar esta sede?</p>
         </DialogContent>
         <DialogActions>
           <button
-            className="inline-block px-6 py-2.5 bg-gray-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-gray-700 hover:shadow-lg focus:bg-gray-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-gray-500 active:shadow-lg transition duration-150 ease-in-out"
+            className="bg-gray-500 px-4 py-1 rounded-md text-white hover:bg-gray-600"
             onClick={handleClose}
           >
             Cerrar
           </button>
           <button
-            type="button"
+            className="bg-red-500 px-4 py-1 rounded-md text-white hover:bg-red-600"
             onClick={() => eliminarSede(eliminar)}
-            className="inline-block px-6 py-2.5 bg-red-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-red-700 hover:shadow-lg focus:bg-red-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-red-800 active:shadow-lg transition duration-150 ease-in-out ml-1"
           >
             Eliminar
           </button>
