@@ -11,10 +11,14 @@ const OlvidePassword = lazy(() => import("./pages/auth/OlvidePassword"));
 const NuevoPassword = lazy(() => import("./pages/auth/NuevoPassword"));
 const Inicio = lazy(() => import("./pages/Inicio"));
 const CambiarPassword = lazy(() => import("./pages/auth/CambiarPassword"));
+const Inscripciones = lazy(() => import("./pages/mantenedores/Inscripciones"));
+
 
 const Sedes = lazy(() => import("./pages/mantenedores/Sedes"));
 const Usuarios = lazy(() => import("./pages/mantenedores/Usuarios"));
 const Perfiles = lazy(() => import("./pages/mantenedores/Perfiles"));
+const Eventos = lazy(() => import("./pages/mantenedores/Eventos"));
+const DetEvento = lazy(() => import("./pages/mantenedores/DetEvento"));
 
 
 
@@ -26,8 +30,11 @@ function App() {
           <Suspense fallback={<Spinner />}>
             <Routes>
               <Route path="/" element={<AuthLayout />}>
-                <Route index element={<Login />} />
+                <Route index element={<Login />} /> 
+              
+
                 <Route path="olvide-password" element={<OlvidePassword />} />
+                <Route path="inscripciones" element={<Inscripciones />} />
                 <Route
                   path="olvide-password/:token"
                   element={<NuevoPassword />}
@@ -49,6 +56,8 @@ function App() {
                 <Route path="usuarios" element={<Usuarios />} />
                 <Route path="perfil" element={<Perfiles />} />
 
+                <Route path="evento" element={<Eventos />} />
+                <Route path="detEvento" element={<DetEvento />} />
 
 
               </Route>

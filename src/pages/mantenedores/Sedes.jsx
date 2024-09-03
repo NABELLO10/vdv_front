@@ -31,8 +31,8 @@ const Sedes = () => {
 
   const [sedes, setSedes] = useState([]);
   const [edit, setEdit] = useState({});
+  
   const [currentPage, setCurrentPage] = useState(1);
-
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
    

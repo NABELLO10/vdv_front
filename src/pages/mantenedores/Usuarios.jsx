@@ -2,24 +2,38 @@ import { useEffect, useState } from "react";
 import { msgError, msgOk } from "../../components/Alertas";
 import clienteAxios from "../../config/axios";
 import useAuth from "../../hooks/useAuth";
+import useAdicionales from "../../hooks/useAdicionales";
 
 import TextField from "@mui/material/TextField";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
+import Button from "@mui/material/Button";
+import Pagination from "@mui/material/Pagination";
+import EditTwoToneIcon from '@mui/icons-material/EditTwoTone';
+import DeleteTwoToneIcon from '@mui/icons-material/DeleteTwoTone';
+
 
 const Usuarios = () => {
   const { auth } = useAuth();  
+  const { clientes, ciudades } = useAdicionales();
+
+  const [id_cliente, setCliente] = useState(auth.id_cliente);
 
   const [perfiles, setPerfiles] = useState([]);
-  const [empresasListado, setEmpresasListado] = useState([]);
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
-  const [id_empresa, setEmpresa] = useState(auth.id_empresa);
   const [perfil, setPerfil] = useState("");
   const [estado, setEstado] = useState(1);
+
   const [busqueda, setBusqueda] = useState("");
+  const [edit, setEdit] = useState("");
   const [id, setID] = useState(null);
+  const [eliminar, setEliminar] = useState("");
 
   //Lista de usuarios registrados
   const [usuarios, setUsuarios] = useState([]);
@@ -38,31 +52,60 @@ const Usuarios = () => {
 
   useEffect(() => {
     obtenerPerfiles();
-    obtenerEmpresas()
-    listarUsuarios();
-  }, [id_empresa]);
+    obtenerUsuarios();
+  }, [id_cliente]);
 
 
-  const obtenerEmpresas = async () =>{
-    try {
-        const token = localStorage.getItem("token_vdv")
+  //PAGINACION Y ORDEN ---------------------------------------------------
+    
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState("asc");
+   
+  const itemsPerPage = 5;
 
-        if(!token) return
+  const sortData = (column) => {
+    const newDirection = sortColumn === column && sortDirection === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortDirection(newDirection);
   
-        const config = {
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            }
-        }                        
-     
-        const {data} = await clienteAxios('/crud/obtener-empresas', config)           
-        setEmpresasListado(data)
+    const sortedData = [...usuarios].sort((a, b) => {
+      if (newDirection === "asc") {
+        return a[column] > b[column] ? 1 : -1;
+      } else {
+        return a[column] < b[column] ? 1 : -1;
+      }
+    });
+  
+    setUsuarios(sortedData);
+  };
 
-    } catch (error) {
-        console.log(error)
-    }
-}   
+  const handlePageChange = (event, value) => {
+    setCurrentPage(value);
+  };
+
+    // Filtrar las usuarios según la búsqueda
+    const filteredUsuarios = usuarios.filter((val) => {
+      if (!busqueda) return val;
+      return val.nom_usuario.toLowerCase().includes(busqueda.toLowerCase());
+    });
+
+      // Calcular la paginación después del filtro
+    const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
+    const paginasUsuarios = filteredUsuarios.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );    
+
+    // Resetear la página actual si se cambia la búsqueda y no hay suficientes elementos
+    useEffect(() => {
+      if (currentPage > totalPages) {
+        setCurrentPage(1);
+      }
+    }, [filteredUsuarios, totalPages, currentPage]);
+  
+   //-----------------------------------------------------------------------
+
 
   const obtenerPerfiles = async () => {
     try {
@@ -78,7 +121,7 @@ const Usuarios = () => {
       };
 
       const { data } = await clienteAxios(
-        `/crud/obtener-perfil-activo/${id_empresa}`,
+        `/crud/perfil/${id_cliente}`,
         config
       );
       setPerfiles(data);
@@ -87,7 +130,7 @@ const Usuarios = () => {
     }
   };
 
-  const listarUsuarios = async () => {
+  const obtenerUsuarios = async () => {
     try {
       const token = localStorage.getItem("token_vdv");
 
@@ -101,7 +144,7 @@ const Usuarios = () => {
       };
 
       const { data } = await clienteAxios(
-        `/crud/obtener-usuarios/${id_empresa}`,
+        `/crud/obtener-usuarios/${id_cliente}`,
         config
       );
       setUsuarios(data);
@@ -113,20 +156,20 @@ const Usuarios = () => {
   const limpiarFormulario = () => {
     setNombre("");
     setEmail("");
-    //  setEmpresa('')
     setPerfil("");
+    setEdit("");
     setUsuario({});
     setID(null);
+    obtenerUsuarios();
   };
 
-  const setEdicion = (usuario) => {
-    setUsuario(usuario);
 
+  const setEdicion = (usuario) => {
+    setEdit(usuario);
+    
     setNombre(usuario.nom_usuario);
     setEmail(usuario.email);
-    setEmpresa(usuario.id_empresa);
     setPerfil(usuario.id_perfil);
-    setNombre(usuario.nom_usuario);
     setEstado(usuario.est_activo);
     setID(usuario.id);
   };
@@ -152,9 +195,9 @@ const Usuarios = () => {
         config
       );
 
-      msgOk(data.msg);
-      listarUsuarios();
+      msgOk(data.msg);     
       limpiarFormulario();
+
       handleClose()
       
     } catch (error) {
@@ -173,7 +216,7 @@ const Usuarios = () => {
   };
 
   const registrar = async () => {
-    if ([nombre, email, id_empresa, perfil].includes("")) {
+    if ([nombre, email, perfil].includes("")) {
       msgError("Ingrese todos los campos");
       return;
     }
@@ -193,12 +236,12 @@ const Usuarios = () => {
         },
       };
 
-      if (usuario.id) {
+      if (edit.id) {
         const { data } = await clienteAxios.put(
-          `/crud/registrar/${usuario.id}`,
+          `/crud/registrar/${edit.id}`,
           {
             nombre: nombre,
-            id_empresa,
+            id_cliente,
             email,
             id_perfil: perfil,
             est_activo: estado,
@@ -213,7 +256,7 @@ const Usuarios = () => {
           {
             nombre,
             email,
-            id_empresa,
+            id_cliente,
             id_perfil: perfil,
             est_activo: estado,
           },
@@ -222,8 +265,6 @@ const Usuarios = () => {
 
         msgOk(data.msg);
       }
-
-      listarUsuarios();
       limpiarFormulario();
     } catch (error) {
       msgError(error.response.data.msg);
@@ -237,288 +278,250 @@ const Usuarios = () => {
 
   return (
     <>
-      <h2 className="font-black text-black text-2xl ">
-      Usuarios{" "}
-      
-      </h2>
+    <div className="mx-auto">
+      <h6 className="font-black text-gray-800 text-xl mb-2">Usuarios</h6>
 
-      <div className="grid-cols-2 lg:flex mt-4">
-        <div className="shadow-lg lg:mx-auto lg:w-5/12 px-5 py-5 rounded-xl bg-white">
-          <form onSubmit={handleSubmit}>
-            {auth.id == 1 && (
-              <div className="">
-                <label
-                  htmlFor="empresa"
-                  className="peer-placeholder-shown:uppercase absolute left-0 -top-3.5 text-gray-900 text-sm
-                                peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 transition-all peer-placeholder-shown:top-3"
-                ></label>
-
-                <select
-                  name="empresa"
-                  value={id_empresa}
-                  className={`mt-2 w-full p-2 bg-gray-50 border uppercase border-gray-300 rounded-lg text-center text font-bold text-gray-500 `}
-                  onChange={(e) => setEmpresa(+e.target.value)}
-                >
-                  <option value={""} disabled hidden>
-                    Seleccionar...
-                  </option>
-                  {empresasListado.map((empresa) => (
-                    <option key={empresa.id} value={empresa.id}>
-                      {empresa.nom_empresa}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="py-3 relative">
+      <div className="bg-white shadow rounded-lg p-3 mb-3">
+        <form onSubmit={handleSubmit}>
+          {auth.id == 1 && (
+            <FormControl fullWidth margin="dense" size="small">
+              <InputLabel id="cliente-label">Cliente</InputLabel>
+              <Select
+                labelId="cliente-label"
+                id="cliente"
+                value={id_cliente}
+                onChange={(e) => setCliente(e.target.value)}
+                label="Cliente"
+              >
+                {clientes.map((r) => (
+                  <MenuItem key={r.id} value={r.id}>
+                    {r.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <FormControl fullWidth margin="dense" size="small">
               <TextField
-                id="nombre"
-                className="peer pt-3 pb-2 block w-full"
+                id="nom_usuario"
+                label="Nombre Usuario"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                label="Nombre"
                 variant="outlined"
+                fullWidth
+                size="small"
               />
-            </div>
+            </FormControl>
 
-            <div className="py-2 relative">
+            <FormControl fullWidth margin="dense" size="small">
               <TextField
                 id="email"
-                className="peer pt-3 pb-2 block w-full"
+                label="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                label="Email"
-                type="email"
                 variant="outlined"
+                fullWidth
+                size="small"
+              />
+            </FormControl>
+
+            <FormControl fullWidth margin="dense" size="small">
+              <InputLabel id="ciudad-label">Perfil</InputLabel>
+              <Select
+                labelId="pefil-label"
+                id="perfiles"
+                value={perfil}
+                onChange={(e) => setPerfil(e.target.value)}
+                label="Email"
+              >
+                <MenuItem value="" disabled>
+                  Perfil...
+                </MenuItem>
+                {perfiles.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {p.nom_perfil}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+    
+            <FormControl fullWidth margin="dense" size="small">
+              <InputLabel id="estado-label">Estado</InputLabel>
+              <Select
+                labelId="estado-label"
+                id="estado"
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+                label="Estado"
+              >
+                <MenuItem value={1}>Activo</MenuItem>
+                <MenuItem value={0}>Inactivo</MenuItem>
+              </Select>
+            </FormControl>
+          </div>
+
+          <div className="mt-1 lg:flex  justify-end gap-2">
+            <input
+              type="submit"
+              value={edit.id ? "Actualizar" : "Registrar"}
+              className="bg-cyan-950  hover:bg-cyan-600 duration-100 w-full lg:w-auto py-1 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10"
+            ></input>
+
+            <button
+              type="button"
+              onClick={limpiarFormulario}
+              className={
+                "bg-gray-600  hover:bg-gray-700 duration-100 lgflex w-full  lg:w-auto py-1 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10"
+              }
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-2">
+        <TextField
+          id="busqueda"
+          label="Buscar Usuario"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          fullWidth
+          variant="outlined"
+          size="small"
+          margin="dense"
+        />
+        <div className="overflow-x-auto rounded-xl ">
+          <table className="min-w-full table-auto border-collapse  border text-center border-gray-300">
+            <thead>
+              <tr className="bg-cyan-950 text-center text-white">
+                <th
+                  className="px-4 font-semibold cursor-pointer hover:text-cyan-600"
+                  onClick={() => sortData("nombre")}
+                >
+                  Usuario{" "}
+                  {sortColumn === "nombre" &&
+                    (sortDirection === "asc" ? "▲" : "▼")}
+                </th>
+                <th
+                  className="px-4 font-semibold cursor-pointer  hover:text-cyan-600"
+                  onClick={() => sortData("email")}
+                >
+                  Email{" "}
+                  {sortColumn === "email" &&
+                    (sortDirection === "asc" ? "▲" : "▼")}
+                </th>
+                <th
+                  className="px-4 font-semibold cursor-pointer  hover:text-cyan-600"
+                  onClick={() => sortData("mae_perfile.nom_perfil")}
+                >
+                  Perfil{" "}
+                  {sortColumn === "mae_perfile.nom_perfil" &&
+                    (sortDirection === "asc" ? "▲" : "▼")}
+                </th>
+                <th
+                  className="px-4 font-semibold cursor-pointer  hover:text-cyan-600"
+                  onClick={() => sortData("est_activo")}
+                >
+                  Estado{" "}
+                  {sortColumn === "est_activo" &&
+                    (sortDirection === "asc" ? "▲" : "▼")}
+                </th>
+                <th className="px-4"></th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-200">
+              {paginasUsuarios.map((usuario) => (
+                <tr key={usuario.id} className="hover:bg-gray-200">
+                  <td className="px-4 py-2 text-sm">{usuario.nom_usuario}</td>
+                  <td className="px-4 py-2 text-sm">
+                    {usuario.email}
+                  </td>
+                  <td className="px-4 py-2 text-sm">{usuario.mae_perfile.nom_perfil}</td>
+
+                  <td className="px-4 py-2 text-sm">
+                    {usuario.est_activo ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-green-600">
+                        Activo
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-600">
+                        Inactivo
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-1 flex gap-2 justify-end mr-20">
+                    <button
+                      type="button"
+                      onClick={() => setEdicion(usuario)}
+                      className="py-1  text-blue-600 hover:text-blue-900"
+                    >
+                      <EditTwoToneIcon />
+                    </button>
+
+                    <button
+                      className="py-1 text-red-500 hover:text-red-800 "
+                      onClick={() => {
+                        setEliminar(usuario.id);
+                        handleClickOpen();
+                      }}
+                    >
+                      <DeleteTwoToneIcon />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-4">
+              <Pagination
+                count={totalPages}
+                page={currentPage}
+                onChange={handlePageChange}
+                variant="outlined"
+                shape="rounded"
               />
             </div>
-
-            <div className="my-8 relative">
-              <label
-                htmlFor="perfil"
-                className="peer-placeholder-shown:uppercase absolute left-0 -top-3.5 text-gray-900 text-sm
-                            peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 transition-all peer-placeholder-shown:top-3"
-              >
-                PERFIL
-              </label>
-
-              <select
-                name="perfil"
-                value={perfil}
-                className="mt-2 w-full p-2  bg-gray-50 border border-gray-300 rounded-lg text-center text font-bold text-gray-500"
-                onChange={(e) => setPerfil(+e.target.value)}
-              >
-                <option value={""} disabled hidden>
-                  Seleccionar...
-                </option>
-                {perfiles.map((p) => (
-                  <option key={p.nom_perfil} value={p.id}>
-                    {p.nom_perfil}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="my-8 relative">
-              <label
-                htmlFor="perfil"
-                className="peer-placeholder-shown:uppercase  absolute left-0 -top-3.5 text-gray-900 text-sm
-                        peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 transition-all peer-placeholder-shown:top-3"
-              >
-                ESTADO
-              </label>
-
-              <select
-                name="perfil"
-                value={estado}
-                className="mt-2 w-full p-2 bg-gray-50 border  border-gray-300 rounded-lg text-center text font-bold text-gray-500"
-                onChange={(e) => setEstado(+e.target.value)}
-              >
-                <option value={1}>Activo</option>
-                <option value={0}>Inactivo</option>
-              </select>
-            </div>
-
-            <div className="2xl:flex 2xl:gap-2">
-              <input
-                type="submit"
-                value={usuario.id ? "Actualizar" : "Registrar"}
-                className="bg-black w-full  hover:bg-gray-800 duration-500 py-3 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10"
-              ></input>
-
-              <button
-                type="button"
-                onClick={limpiarFormulario}
-                className={`bg-gray-600  hover:bg-gray-700 duration-500 w-full  py-3 rounded-md text-white uppercase font-bold mt-2 hover:cursor-pointer px-10 `}
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className=" rounded-lg lg:mx-auto max-h-36 md:w-full  lg:w-6/12 mt-5 lg:mt-0">
-          <div className="">
-            <input
-              name="busqueda"
-              id="busqueda"
-              type="text"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className=" border border-blue-800 shadow rounded-md p-1  w-full text-blue-500 placeholder-blue-300 mb-2"
-              placeholder=" Buscar usuario..."
-            />
-          </div>
-          <div className="overflow-auto  rounded-lg lg:mx-auto h-96 md:w-full  mt-5 lg:mt-0">
-            <table className=" border-collapse border-2 lg:w-full shadow-lg border-gray-300 rounded-lg bg-white text-left text-xs text-gray-500">
-              <thead className=" font-bold text-white bg-cyan-950">
-                <tr>
-                  <th scope="col" className="px-6 py-1 ">
-                    Usuario
-                  </th>
-
-                  <th scope="col" className="px-6 ">
-                    Perfil
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6  "
-                  ></th>
-                  <th
-                    scope="col"
-                    className="px-6  "
-                  ></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100  border-gray-100">
-                {usuarios
-                  .filter((val) => {
-                    if (busqueda == "") {
-                      return val;
-                    } else if (
-                      val.nom_usuario
-                        .toLowerCase()
-                        .includes(busqueda.toLowerCase())
-                    ) {
-                      return val;
-                    }
-                  })
-                  .map((usuario) => (
-                    <tr
-                      className="whitespace-nowrap hover:bg-gray-200"
-                      key={usuario.id}
-                    >
-                      <td className="px-6 font-bold py-4 text-sm text-gray-500">
-                        <p>{usuario.nom_usuario}</p>
-                        <p>{usuario.email}</p>
-                      </td>
-                      <td className="px-6 py-4  text-sm text-gray-500">
-                        {usuario.mae_perfile.nom_perfil}
-                      </td>
-
-                      <td className="px-6 py-4  text-sm text-gray-500">
-                        {" "}
-                        {usuario.est_activo ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-green-600">
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-600"></span>
-                            Activo
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-600">
-                            <span className="h-1.5 w-1.5 rounded-full bg-red-600"></span>
-                            Inactivo
-                          </span>
-                        )}
-                      </td>
-
-                      <td>
-                        <button
-                          type="button"
-                          onClick={() => setEdicion(usuario)}
-                          className="py-1 mx-2"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-6 h-6 text-blue-400 hover:text-blue-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-
-                        <button
-                          className="py-1 "
-                          onClick={() => {
-                            setID(usuario.id);
-                            handleClickOpen();
-                          }}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-6 h-6 text-red-500 hover:text-red-800"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button> 
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          )}
         </div>
       </div>
 
-    <Dialog
-        fullWidth={true}
-        maxWidth={"sm"}
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogContent>
-          <div className="p-0.5 rounded-lg">
-            <div className="">
-              <div className="modal-body relative p-4">
-                <p>¿Realmente desea eliminar este Usuario?</p>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <button
-            className="inline-block px-6 py-2.5 bg-gray-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-gray-700 hover:shadow-lg focus:bg-gray-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-gray-500 active:shadow-lg transition duration-150 ease-in-out"
-            onClick={handleClose}
-          >
-            Cerrar
-          </button>
-          <button
-            type="button"
-            onClick={() => eliminarUsuario(id)}
-            className="inline-block px-6 py-2.5 bg-red-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-red-700 hover:shadow-lg focus:bg-red-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-red-800 active:shadow-lg transition duration-150 ease-in-out ml-1"
-          >
-            Eliminar
-          </button>
-        </DialogActions>
-      </Dialog> 
-    </>
+      <Dialog
+      fullWidth
+      maxWidth={"sm"}
+      open={open}
+      onClose={handleClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogContent>
+        <p>¿Realmente desea eliminar esta usuario?</p>
+      </DialogContent>
+      <DialogActions>
+        <button
+          className="bg-gray-500 px-4 py-1 rounded-md text-white hover:bg-gray-600"
+          onClick={handleClose}
+        >
+          Cerrar
+        </button>
+        <button
+          className="bg-red-500 px-4 py-1 rounded-md text-white hover:bg-red-600"
+          onClick={() => eliminarUsuario(eliminar)}
+        >
+          Eliminar
+        </button>
+      </DialogActions>
+    </Dialog> 
+
+    </div>
+
+   
+  </>
   );
 };
 

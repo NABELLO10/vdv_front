@@ -46,11 +46,20 @@ import PointOfSaleTwoToneIcon from '@mui/icons-material/PointOfSaleTwoTone';
 import Diversity3TwoToneIcon from '@mui/icons-material/Diversity3TwoTone';
 import SavingsTwoToneIcon from '@mui/icons-material/SavingsTwoTone';
 
+import ReceiptLongTwoToneIcon from '@mui/icons-material/ReceiptLongTwoTone';
+import BookOnlineTwoToneIcon from '@mui/icons-material/BookOnlineTwoTone';
 
 const menuConfig = [
   { name: "Sedes", href: "/admin/sedes", icono: <ApartmentTwoToneIcon /> },
-  { name: "Perfiles", href: "/admin/perfil", icono: <TuneIcon /> },
+  //{ name: "Perfiles", href: "/admin/perfil", icono: <TuneIcon /> },
   { name: "Usuarios", href: "/admin/usuarios", icono: <PeopleAltIcon /> }, 
+
+];
+
+const menuEventos = [
+  { name: "Eventos", href: "/admin/evento", icono: <BookOnlineTwoToneIcon /> },
+  //{ name: "Perfiles", href: "/admin/perfil", icono: <TuneIcon /> },
+  { name: "Detalles", href: "/admin/detEvento", icono: <ReceiptLongTwoToneIcon /> }, 
 
 ];
 
@@ -195,7 +204,7 @@ export default function Sidebar({auth}) {
         </Link>
       ))} */}
      
-     {(auth.id_perfil == 1 || auth.id_perfil == 2 || auth.id_perfil == 4) &&   <Accordion
+     {(auth.id_perfil == 1)   &&   <Accordion
         expanded={expanded === "config"}
         onChange={handleChange("config")}
       >
@@ -225,10 +234,42 @@ export default function Sidebar({auth}) {
             ))}
           </List>
         </AccordionDetails>
+      </Accordion> }
+ 
+      <Accordion
+        expanded={expanded === "eventos"}
+        onChange={handleChange("eventos")}
+      >
+        <AccordionSummary
+          aria-controls="config-content"
+          id="config-header"
+          onClick={(e) => e.stopPropagation()} // Avoid closing Sidebar when clicking the Accordion
+        >
+          <Typography > Eventos</Typography>
+        </AccordionSummary>
+        <AccordionDetails  style={{ backgroundColor:"#E8E8E8"}}>
+          <List>
+            {menuEventos.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                style={{ textDecoration: "none", color: "#4F4F4F" }}
+                onClick={toggleDrawer("left", false)}
+              >
+                <ListItem disablePadding>
+                  <ListItemButton>
+                    <ListItemIcon>{item.icono}</ListItemIcon>
+                    <ListItemText primary={item.name} />
+                  </ListItemButton>
+                </ListItem>
+              </Link>
+            ))}
+          </List>
+        </AccordionDetails>
       </Accordion>
-}
 
-    {(auth.id_perfil == 1 || auth.id_perfil == 2 || auth.id_perfil == 4 || auth.id_perfil == 7)  &&   <Accordion
+
+{/*     {(auth.id_perfil == 1 || auth.id_perfil == 2 || auth.id_perfil == 4 || auth.id_perfil == 7)  &&   <Accordion
         expanded={expanded === "mantenedores"}
         onChange={handleChange("mantenedores")}
       >
@@ -246,7 +287,7 @@ export default function Sidebar({auth}) {
                 key={item.name}
                 to={item.href}
                 style={{ textDecoration: "none", color: "inherit" }}
-               /*  onClick={toggleDrawer("left", false)} */
+               //  onClick={toggleDrawer("left", false)} 
               >
                 <ListItem disablePadding>
                   <ListItemButton>
@@ -258,10 +299,10 @@ export default function Sidebar({auth}) {
             ))}
           </List>
         </AccordionDetails>
-      </Accordion> }
+      </Accordion> } */}
     
 
-      {(auth.id_perfil == 1 || auth.id_perfil == 2 || auth.id_perfil == 4 || auth.id_perfil == 6)  &&   <Accordion
+{/*       {(auth.id_perfil == 1 || auth.id_perfil == 2 || auth.id_perfil == 4 || auth.id_perfil == 6)  &&   <Accordion
         expanded={expanded === "rrhh"}
         onChange={handleChange("rrhh")}
       >
@@ -291,9 +332,9 @@ export default function Sidebar({auth}) {
             ))}
           </List>
         </AccordionDetails>
-      </Accordion> }
+      </Accordion> } */}
       
-      {( auth.id_perfil == 1 || auth.id_perfil == 2 || auth.id_perfil == 4 || auth.id_perfil == 8)  &&  <Accordion
+   {/*    {( auth.id_perfil == 1 || auth.id_perfil == 2 || auth.id_perfil == 4 || auth.id_perfil == 8)  &&  <Accordion
         expanded={expanded === "operaciones"}
         onChange={handleChange("operaciones")}
       >
@@ -324,7 +365,7 @@ export default function Sidebar({auth}) {
             ))}
           </List>
         </AccordionDetails>
-      </Accordion>  }
+      </Accordion>  } */}
 
      
     </Box>
