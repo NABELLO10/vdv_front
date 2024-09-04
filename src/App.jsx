@@ -30,8 +30,7 @@ function App() {
           <Suspense fallback={<Spinner />}>
             <Routes>
               <Route path="/" element={<AuthLayout />}>
-                <Route index element={<Login />} /> 
-              
+                <Route index element={<Login />} />              
 
                 <Route path="olvide-password" element={<OlvidePassword />} />
                 <Route path="inscripciones" element={<Inscripciones />} />

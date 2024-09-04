@@ -40,7 +40,7 @@ const DetEvento = () => {
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
 
-  const itemsPerPage = 5;
+  const itemsPerPage = 200;
 
   useEffect(() => {
     setEvento("")
@@ -387,7 +387,7 @@ const DetEvento = () => {
      
           {inscripciones.length > 0 && id_evento > 0 ?  <>
             <div className="flex justify-between items-center mb-1">
-            <h6 className="font-black text-gray-800 text-lg">Personas inscritas</h6>
+            <h6 className="font-black text-gray-800 text-lg">Personas Inscritas (Total: {inscripciones.length})</h6>
             <Tooltip title="Descargar Excel">
             <button className="bg-green-900 hover:bg-green-800 px-6 py-1 text-white rounded-md " onClick={exportToExcel}>
             <DescriptionTwoToneIcon/>
